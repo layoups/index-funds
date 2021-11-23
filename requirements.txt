@@ -2,3 +2,7 @@ statsmodels
 gurobipy
 pandas_datareader
 mplfinance
+quandl
+numpy
+pandas
+matplotlib
