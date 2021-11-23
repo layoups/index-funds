@@ -114,6 +114,6 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
         'ticker'
     )
     universe = clean_data(universe)
-    universe['Beta'] = 0
-    universe['alpha'] = 0
+    # universe['Beta'] = 0
+    # universe['alpha'] = 0
     return universe
