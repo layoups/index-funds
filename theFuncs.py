@@ -24,6 +24,7 @@ def load_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     df.columns = map(str.lower, df.columns)
     df.index.name = str.lower(df.index.name)
     df.drop(['adj close'], inplace=True, axis=1)
+    df['ret'] = df.groupby('ticker').close.pct_change()
     return df
 
 def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
@@ -50,6 +51,7 @@ def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     df.columns = map(str.lower, df.columns)
     df.index.name = str.lower(df.index.name)
     df.drop(['adj close'], inplace=True, axis=1)
+    df['ret'] = df.groupby('ticker').close.pct_change()
     return df
 
 
@@ -65,7 +67,7 @@ def load_DTB3_SPY(start="2000-01-01", end="2021-11-12"):
     spy_dtb3.columns = ['spy_close', 'DTB3']
     spy_dtb3.index.rename('date', inplace=True)
     spy_dtb3['DTB3'] = spy_dtb3['DTB3'] / 100.0
-
+    spy_dtb3['spy_ret'] = spy_dtb3.spy_close.pct_change()
     return spy_dtb3
 
 def multi_index_merge(df1, df2, index1, index2):
