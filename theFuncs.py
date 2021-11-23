@@ -26,6 +26,33 @@ def load_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     df.drop(['adj close'], inplace=True, axis=1)
     return df
 
+def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
+    df = pd.read_csv(
+            './data/stock_dfs/{}.csv'.format(tickers[0]), 
+            parse_dates=True, 
+            index_col=0
+        )
+    df['ticker'] = tickers[0]
+    if len(tickers) > 1:
+        for ticker in tickers[1:]:
+            temp = pd.read_csv(
+                './data/stock_dfs/{}.csv'.format(ticker), 
+                parse_dates=True, 
+                index_col=0
+            )
+            temp['ticker'] = ticker
+            df = pd.concat(
+                [
+                    df,
+                    temp
+                ]
+            )
+    df.columns = map(str.lower, df.columns)
+    df.index.name = str.lower(df.index.name)
+    df.drop(['adj close'], inplace=True, axis=1)
+    return df
+
+
 def load_DTB3_SPY_VIX(start="2000-01-01", end="2021-11-12"):
     spy_vix_dtb3 = pd.concat(
         [
@@ -58,27 +85,30 @@ def clean_data(df, many=True):
 
     return df.dropna()
 
-def get_all_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
-    for ticker in tickers:
+def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
+    try:
+        universe = get_ticker_data([tickers[0]], start=start, end=end)
+    except:
+        universe = load_ticker_data([tickers[0]], start=start, end=end)
+
+    for ticker in tickers[1:]:
         try:
-            universe = pd.read_csv(
-                './data/stock_dfs/{}.csv'.format(ticker), 
-                parse_dates=True, 
-                index_col=0
-            )
-            universe['ticker'] = ticker
+            temp = get_ticker_data([ticker], start=start, end=end)
         except:
-            universe = load_ticker_data([ticker], start=start, end=end)
+            temp = load_ticker_data([ticker], start=start, end=end)
 
-        universe = multi_index_merge(
-            universe,
-            pd.read_csv('./data/spy_vix_dtb3.csv', index_col='date', parse_dates=True), 
-            'date', 
-            'ticker'
-        )
-        universe = clean_data(
-            universe,
-            many=False
+        universe = pd.concat(
+            [
+                universe, 
+                temp
+            ]
         )
 
+    universe = multi_index_merge(
+        universe,
+        pd.read_csv('./data/spy_vix_dtb3.csv', index_col='date', parse_dates=True), 
+        'date', 
+        'ticker'
+    )
+    universe = clean_data(universe)
     return universe
