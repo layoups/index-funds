@@ -6,6 +6,8 @@ from statsmodels.regression.rolling import RollingOLS
 import quandl
 import pandas_datareader.data as web
 
+import os
+
 def load_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     df = web.DataReader(tickers[0], 'yahoo', start=start, end=end)
     df['ticker'] = tickers[0]
@@ -56,26 +58,27 @@ def clean_data(df, many=True):
 
     return df.dropna()
 
-def get_train_test_split(ticker, start="2000-01-01", end="2021-11-12"):
-    try:
-        universe = pd.read_csv(
-            './data/stock_dfs/{}.csv'.format(ticker), 
-            parse_dates=True, 
-            index_col=0
-        )
-        universe['ticker'] = ticker
-    except:
-        universe = load_ticker_data([ticker], start=start, end=end)
+def get_all_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
+    for ticker in tickers:
+        try:
+            universe = pd.read_csv(
+                './data/stock_dfs/{}.csv'.format(ticker), 
+                parse_dates=True, 
+                index_col=0
+            )
+            universe['ticker'] = ticker
+        except:
+            universe = load_ticker_data([ticker], start=start, end=end)
 
-    universe = multi_index_merge(
-        universe,
-        pd.read_csv('./data/spy_vix_dtb3.csv', index_col='date', parse_dates=True), 
-        'date', 
-        'ticker'
-    )
-    universe = clean_data(
-        universe,
-        many=False
-    )
+        universe = multi_index_merge(
+            universe,
+            pd.read_csv('./data/spy_vix_dtb3.csv', index_col='date', parse_dates=True), 
+            'date', 
+            'ticker'
+        )
+        universe = clean_data(
+            universe,
+            many=False
+        )
 
     return universe
