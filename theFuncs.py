@@ -53,21 +53,20 @@ def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     return df
 
 
-def load_DTB3_SPY_VIX(start="2000-01-01", end="2021-11-12"):
-    spy_vix_dtb3 = pd.concat(
+def load_DTB3_SPY(start="2000-01-01", end="2021-11-12"):
+    spy_dtb3 = pd.concat(
         [
             web.DataReader('SPY', 'yahoo', start=start, end=end)['Adj Close'],
-            web.DataReader('^VIX', 'yahoo', start=start,end=end)['Adj Close'],
             quandl.get('FRED/DTB3', start_date=start, end_date=end)
         ],
         axis=1
     )
 
-    spy_vix_dtb3.columns = ['spy_close', 'vix_close', 'DTB3']
-    spy_vix_dtb3.index.rename('date', inplace=True)
-    spy_vix_dtb3['DTB3'] = spy_vix_dtb3['DTB3'] / 100.0
+    spy_dtb3.columns = ['spy_close', 'DTB3']
+    spy_dtb3.index.rename('date', inplace=True)
+    spy_dtb3['DTB3'] = spy_dtb3['DTB3'] / 100.0
 
-    return spy_vix_dtb3
+    return spy_dtb3
 
 def multi_index_merge(df1, df2, index1, index2):
     temp = df1.join(df2)
