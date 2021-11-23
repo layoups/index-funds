@@ -105,7 +105,7 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
 
     universe = multi_index_merge(
         universe,
-        pd.read_csv('./data/spy_vix_dtb3.csv', index_col='date', parse_dates=True), 
+        pd.read_csv('./data/spy_dtb3.csv', index_col='date', parse_dates=True), 
         'date', 
         'ticker'
     )
