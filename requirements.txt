@@ -1,2 +1,4 @@
 statsmodels
 gurobipy
+pandas_datareader
+mplfinance
