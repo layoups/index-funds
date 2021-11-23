@@ -74,6 +74,8 @@ def multi_index_merge(df1, df2, index1, index2):
     temp = df1.join(df2)
     temp.set_index(index2, inplace=True, append=True)
     temp = temp.reorder_levels([index2, index1]).sort_index()
+    # temp['ret_premium'] = temp['ret'] - temp['DTB3']
+    # temp['spy_ret_premium'] = temp['spy_ret'] - temp['DTB3']
     return temp
 
 def clean_data(df, many=True):
@@ -112,4 +114,6 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
         'ticker'
     )
     universe = clean_data(universe)
+    universe['Beta'] = 0
+    universe['alpha'] = 0
     return universe
