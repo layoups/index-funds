@@ -11,6 +11,8 @@ from gurobipy import GRB
 
 import os
 
+##################### DATA #####################
+
 def load_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
     df = web.DataReader(tickers[0], 'yahoo', start=start, end=end)
     df['ticker'] = tickers[0]
