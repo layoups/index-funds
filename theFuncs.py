@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.regression.rolling import RollingOLS
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 import quandl
 import pandas_datareader.data as web
@@ -123,6 +124,22 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
     # universe['Beta'] = 0
     # universe['alpha'] = 0
     return universe
+
+##################### MODELS #####################
+
+def get_portfolio_returns(index_weights, date, df):
+    start_date = datetime.strptime(date, "%Y-%m-%d")
+    end_date = start_date + relativedelta(months=3)
+
+    relevant_returns = df[index_weights.T.index].reindex(
+        pd.date_range(start_date, end_date)
+    ).dropna() + 1
+
+    total_relevant_returns = relevant_returns.cumprod().iloc[-1]
+    portfolio_returns = total_relevant_returns.multiply(index_weights).sum()
+
+    return portfolio_returns
+
 
 ##################### MODELS #####################
 
