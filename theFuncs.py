@@ -6,6 +6,9 @@ from statsmodels.regression.rolling import RollingOLS
 import quandl
 import pandas_datareader.data as web
 
+import gurobipy as gp
+from gurobipy import GRB
+
 import os
 
 def load_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
