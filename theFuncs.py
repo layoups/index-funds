@@ -140,6 +140,20 @@ def get_portfolio_returns(index_weights, date, df):
 
     return portfolio_returns
 
+def get_spy_returns(portfolio_returns, date):
+    start_date = datetime.strptime(date, "%Y-%m-%d")
+    end_date = start_date + relativedelta(months=3)
+
+    spy_returns = pd.read_csv(
+        'data/spy_dtb3.csv', 
+        index_col=0, 
+        parse_dates=True
+    ).reindex(
+        pd.date_range(start_date, end_date)
+    ).dropna().spy_ret.add(1).cumprod().iloc[-1]
+
+    return portfolio_returns - spy_returns
+
 
 ##################### MODELS #####################
 
