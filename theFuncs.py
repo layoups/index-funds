@@ -122,3 +122,69 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
     # universe['Beta'] = 0
     # universe['alpha'] = 0
     return universe
+
+##################### MODELS #####################
+
+def clustering_model(rolling_correlations, date, K):
+    tups = {}
+
+    for i in rolling_correlations.columns:
+        for j in rolling_correlations.columns:
+
+            tups[(i, j)] = rolling_correlations.loc[(date, i), j]
+            tups[(j, i)] = rolling_correlations.loc[(date, j), i]
+
+    tickers, correlations = gp.multidict(tups)
+
+    m = gp.Model("Clustering")
+
+    x = m.addVars(
+        tickers, 
+        vtype = GRB.BINARY, 
+        name = "X"
+    )
+
+    y = m.addVars(
+        rolling_correlations.columns, 
+        vtype = GRB.BINARY, 
+        name = "Y"
+    )
+
+    portfolio_similarity = x.prod(correlations)
+    m.setObjective(
+        portfolio_similarity, 
+        GRB.MAXIMIZE
+    )
+
+    cluster_numbers = m.addConstr(
+        y.sum('*') == K, 
+        name = "cluster_numbers"
+    )
+
+    one_ticker_one_cluster = m.addConstrs(
+        (x.sum(i, '*') == 1 for i in y), 
+        name = "one_ticker_one_cluster"
+    )
+
+    cluster_centers = m.addConstrs(
+        (x[i, j] <= y[j] for i in y for j in y), 
+        name = "cluster_centers"
+    )
+
+    m.write("Clustering.lp")
+    m.optimize()
+
+    y_results = pd.DataFrame(
+        pd.Series({i: y[i].x for i in y}), 
+        columns=["is_center"]
+    )
+    y_results.index.name = "center"
+
+    x_results = pd.DataFrame(
+        pd.Series({i: x[i].x for i in x}), 
+        columns=["in_center"]
+    ) 
+    x_results.index.set_names(["ticker", "center"], inplace=True)
+
+    return x_results, y_results, x_results.join(y_results)
+
