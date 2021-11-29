@@ -308,4 +308,6 @@ def mean_variance_model(
     )
     x_results.index.name = "center"
 
-    return x_results
+    opti_objective = np.sqrt(objective.getValue())
+
+    return x_results, opti_objective
