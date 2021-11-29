@@ -133,7 +133,7 @@ def get_portfolio_returns(index_weights, date, df):
 
     relevant_returns = df[index_weights.T.index].reindex(
         pd.date_range(start_date, end_date)
-    ).dropna() + 1
+    ).dropna().add(1)
 
     total_relevant_returns = relevant_returns.cumprod().iloc[-1]
     portfolio_returns = total_relevant_returns.multiply(index_weights).sum()
@@ -153,6 +153,15 @@ def get_spy_returns(date):
     ).dropna().spy_ret.add(1).cumprod().iloc[-1]
 
     return spy_returns
+
+def get_portfolio_beta(index_weights, date, df):
+    return df.loc[
+        (index_weights.index, date), 
+        ["alpha", "Beta"]
+    ].reset_index(
+        level=1, 
+        drop=True
+    ).Beta.multiply(index_weights).sum()
 
 
 ##################### MODELS #####################
