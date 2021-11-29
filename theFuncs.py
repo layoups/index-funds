@@ -229,3 +229,5 @@ def clustering_model(rolling_correlations, date, K):
 
     return x_results, y_results, x_results.join(y_results)
 
+def mean_variance_model():
+    None
