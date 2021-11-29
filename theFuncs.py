@@ -100,12 +100,16 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
         universe = get_ticker_data([tickers[0]], start=start, end=end)
     except:
         universe = load_ticker_data([tickers[0]], start=start, end=end)
+    finally:
+        universe = load_ticker_data(['AAPL'], start=start, end=end)
 
     for ticker in tickers[1:]:
         try:
             temp = get_ticker_data([ticker], start=start, end=end)
         except:
             temp = load_ticker_data([ticker], start=start, end=end)
+        finally:
+            continue
 
         universe = pd.concat(
             [
