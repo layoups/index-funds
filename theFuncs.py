@@ -229,7 +229,16 @@ def clustering_model(rolling_correlations, date, K):
 
     return x_results, y_results, x_results.join(y_results)
 
-def mean_variance_model(market_caps, df, date, rolling_covariances, center_weights):
+def mean_variance_model(
+    market_caps, 
+    df, 
+    date, 
+    rolling_covariances, 
+    center_weights,
+    min_beta,
+    max_beta,
+    min_expected_residual_return
+):
     benchmark_weights = market_caps.loc[(slice(None), date), :] /\
         market_caps.loc[(slice(None), date), :].sum()
 
@@ -243,9 +252,9 @@ def mean_variance_model(market_caps, df, date, rolling_covariances, center_weigh
 
     covariances = rolling_covariances.loc[(date, slice(None)), :].values
 
-    m2 = gp.Model("MeanVariance")
+    m = gp.Model("MeanVariance")
     x = pd.Series(
-        m2.addVars(
+        m.addVars(
             tickers, 
             vtype = GRB.CONTINUOUS, 
             lb = 0, 
@@ -258,43 +267,38 @@ def mean_variance_model(market_caps, df, date, rolling_covariances, center_weigh
         x.subtract(benchmark_weights.reset_index(level=1, drop=True).MarketCap)
     ).dot(x.subtract(benchmark_weights.reset_index(level=1, drop=True).MarketCap))
 
-    m2.setObjective(
+    m.setObjective(
         objective, 
         GRB.MINIMIZE
     )
 
-    only_centers = m2.addConstrs(
+    only_centers = m.addConstrs(
         (x[i] == 0 for i in x.drop(center_weights.index).index), 
         name = "only_centers"
     )
 
-    equal_one = m2.addConstr(
+    equal_one = m.addConstr(
         x.sum() == 1, 
         name = "equal_one"
     )
 
-    beta_lower_bound = m2.addConstr(
-        x.dot(betas) >= 0.5, 
+    beta_lower_bound = m.addConstr(
+        x.dot(betas) >= min_beta, 
         name = "beta_lower_bound"
     )
 
-    beta_upper_bound = m2.addConstr(
-        x.dot(betas) <= 1.5, 
+    beta_upper_bound = m.addConstr(
+        x.dot(betas) <= max_beta, 
         name = "beta_upper_bound"
     )
 
-    beta_upper_bound = m2.addConstr(
-        x.dot(betas) <= 1.5, 
-        name = "beta_upper_bound"
-    )
-
-    alpha_min = m2.addConstr(
-        x.dot(alphas) >= 1e-3, 
+    alpha_min = m.addConstr(
+        x.dot(alphas) >= min_expected_residual_return, 
         name = "alpha_min"
     )
 
-    m2.write("MeanVar.lp")
-    m2.optimize()
+    m.write("MeanVar.lp")
+    m.optimize()
 
     x_results = pd.DataFrame(
         pd.Series(
