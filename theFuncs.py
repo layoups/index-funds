@@ -229,5 +229,79 @@ def clustering_model(rolling_correlations, date, K):
 
     return x_results, y_results, x_results.join(y_results)
 
-def mean_variance_model():
-    None
+def mean_variance_model(market_caps, df, date, rolling_covariances, center_weights):
+    benchmark_weights = market_caps.loc[(slice(None), date), :] /\
+        market_caps.loc[(slice(None), date), :].sum()
+
+    theData = {
+        i: [df.loc[(i, date), :].values[0][-2], df.loc[(i, date), :].values[0][-1]]\
+            for i in df.index.get_level_values(0).unique()
+    }
+
+    tickers, alphas, betas = gp.multidict(theData)
+    betas, alphas = pd.Series(betas), pd.Series(alphas)
+
+    covariances = rolling_covariances.loc[(date, slice(None)), :].values
+
+    m2 = gp.Model("MeanVariance")
+    x = pd.Series(
+        m2.addVars(
+            tickers, 
+            vtype = GRB.CONTINUOUS, 
+            lb = 0, 
+            ub = 1, 
+            name = "tickers"
+        )
+    )
+
+    objective = covariances.dot(
+        x.subtract(benchmark_weights.reset_index(level=1, drop=True).MarketCap)
+    ).dot(x.subtract(benchmark_weights.reset_index(level=1, drop=True).MarketCap))
+
+    m2.setObjective(
+        objective, 
+        GRB.MINIMIZE
+    )
+
+    only_centers = m2.addConstrs(
+        (x[i] == 0 for i in x.drop(center_weights.index).index), 
+        name = "only_centers"
+    )
+
+    equal_one = m2.addConstr(
+        x.sum() == 1, 
+        name = "equal_one"
+    )
+
+    beta_lower_bound = m2.addConstr(
+        x.dot(betas) >= 0.5, 
+        name = "beta_lower_bound"
+    )
+
+    beta_upper_bound = m2.addConstr(
+        x.dot(betas) <= 1.5, 
+        name = "beta_upper_bound"
+    )
+
+    beta_upper_bound = m2.addConstr(
+        x.dot(betas) <= 1.5, 
+        name = "beta_upper_bound"
+    )
+
+    alpha_min = m2.addConstr(
+        x.dot(alphas) >= 1e-3, 
+        name = "alpha_min"
+    )
+
+    m2.write("MeanVar.lp")
+    m2.optimize()
+
+    x_results = pd.DataFrame(
+        pd.Series(
+            {i: x[i].x for i in x.to_dict()}
+        ), 
+        columns = ["weights"]
+    )
+    x_results.index.name = "center"
+
+    return x_results
