@@ -131,10 +131,21 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
     # universe['alpha'] = 0
     return universe
 
+def get_closest_trading_day(date, df):
+    formatted_date = datetime.strptime(date, "%Y-%m-%d")
+    all_dates = df.index.get_level_values("date")
+    date_index = np.argmin(
+        np.abs(
+            all_dates - datetime.strptime("2020-03-23", "%Y-%m-%d")
+        )
+    )
+
+    return all_dates[date_index]
+
 ##################### MODELS #####################
 
 def get_portfolio_returns(index_weights, date, df):
-    start_date = datetime.strptime(date, "%Y-%m-%d")
+    start_date = date
     end_date = start_date + relativedelta(months=3)
 
     relevant_returns = df[index_weights.T.index].reindex(
@@ -147,7 +158,7 @@ def get_portfolio_returns(index_weights, date, df):
     return portfolio_returns
 
 def get_spy_returns(date):
-    start_date = datetime.strptime(date, "%Y-%m-%d")
+    start_date = date
     end_date = start_date + relativedelta(months=3)
 
     spy_returns = pd.read_csv(
@@ -245,6 +256,7 @@ def mean_variance_model(
     max_beta,
     min_expected_residual_return
 ):
+    date = str(date)
     benchmark_weights = market_caps.loc[(slice(None), date), :] /\
         market_caps.loc[(slice(None), date), :].sum()
 
