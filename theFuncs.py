@@ -260,7 +260,7 @@ def mean_variance_model(
     max_beta,
     min_expected_residual_return
 ):
-    date = str(date)
+    # date = str(date)
     benchmark_weights = market_caps.loc[(slice(None), date), :] /\
         market_caps.loc[(slice(None), date), :].sum()
 
@@ -272,7 +272,9 @@ def mean_variance_model(
     tickers, alphas, betas = gp.multidict(theData)
     betas, alphas = pd.Series(betas), pd.Series(alphas)
 
-    covariances = rolling_covariances.loc[(date, slice(None)), :].values
+    covariances = rolling_covariances.loc[
+        (date, benchmark_weights.index.get_level_values(0))
+    ].values
 
     m = gp.Model("MeanVariance")
     x = pd.Series(
@@ -284,6 +286,7 @@ def mean_variance_model(
             name = "tickers"
         )
     )
+    x.index.names=["ticker", "date"]
 
     objective = covariances.dot(
         x.subtract(benchmark_weights.reset_index(level=1, drop=True).MarketCap)
