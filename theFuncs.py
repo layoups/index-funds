@@ -350,7 +350,11 @@ def master_func(
     rolling_covariances, 
     min_beta,
     max_beta,
-    min_expected_residual_return
+    min_expected_residual_return,
+    master_cluster_index,
+    master_cluster_performance,
+    master_mean_var_index,
+    master_mean_var_performance
 ):
     start_date = get_closest_trading_day(date, ticker_data)
     _, _, z = clustering_model(rolling_correlations, date, K)
@@ -370,16 +374,21 @@ def master_func(
     portfolio_returns, spy_returns, return_diff, portfolio_beta = \
         compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
 
-    cluster_index = {
-        (start_date, x): center_weights.loc[x] for x in center_weights.index
-    }
+    for x in center_weights.index:
+        master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
 
-    cluster_performance = {
-        "Index Returns": {start_date: portfolio_returns}, 
-        "SPY Returns": {start_date: spy_returns},
-        "Return Diff": {start_date: return_diff},
-        "Index Beta": {start_date: portfolio_beta}
+    # master_cluster_index = {
+    #     *master_cluster_index, 
+    #     *{(start_date, x): center_weights.loc[x] for x in center_weights.index}
+    # } 
+
+    master_cluster_performance[start_date] = {
+        "Index Returns": portfolio_returns,
+        "SPY Returns": spy_returns,
+        "Return Diff": return_diff,
+        "Index Beta": portfolio_beta,
     }
+    
 
     mean_var_step, obj = mean_variance_model(
         market_caps, 
@@ -400,18 +409,26 @@ def master_func(
             ticker_data_wide
         )
 
-    mean_var_index = {
-        (start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index
+    # mean_var_index = {
+    #     (start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index
+    # }
+
+    # master_mean_var_index = {
+    #     *master_mean_var_index,
+    #     *{(start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index}
+    # }
+
+    for x in mean_var_step[mean_var_step.weights > 0].index:
+        master_mean_var_index[(start_date, x)] = {'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights}
+
+    master_mean_var_performance = {
+        "Index Returns": portfolio_returns,
+        "SPY Returns": spy_returns,
+        "Return Diff": return_diff,
+        "Index Beta": portfolio_beta,
+        "Active Risk": obj
     }
 
-    mean_var_performance = {
-        "Index Returns": {start_date: portfolio_returns}, 
-        "SPY Returns": {start_date: spy_returns},
-        "Return Diff": {start_date: return_diff},
-        "Index Beta": {start_date: portfolio_beta}, 
-        "Active Risk": {start_date: obj}
-    }
-
-    return cluster_index, cluster_performance, mean_var_index, mean_var_performance
+    return True
 
     
