@@ -325,6 +325,11 @@ def mean_variance_model(
     m.write("MeanVar.lp")
     m.optimize()
 
+    if m.status == GRB.INFEASIBLE:
+        print("INFEASIBLE")
+        m.feasRelaxS(1, False, False, True)
+        m.optimize()
+
     x_results = pd.DataFrame(
         pd.Series(
             {i: x[i].x for i in x.to_dict()}
@@ -395,7 +400,7 @@ def master_func(
         mean_var_step, obj = mean_variance_model(
             market_caps, 
             ticker_data, 
-            date, 
+            start_date, 
             rolling_covariances, 
             center_weights,
             min_beta, 
