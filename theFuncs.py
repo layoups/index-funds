@@ -346,8 +346,8 @@ def master_func(
     rolling_correlations,
     market_caps, 
     ticker_data, 
+    ticker_data_wide,
     rolling_covariances, 
-    center_weights,
     min_beta,
     max_beta,
     min_expected_residual_return
@@ -366,5 +366,21 @@ def master_func(
         z_market_cap[
             (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
         ].MarketCap.sum()
+
+    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+        compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
+
+    cluster_index = {
+        (start_date, x): center_weights.loc[x] for x in center_weights.index
+    }
+
+    cluster_performance = {
+        "Index Returns": {start_date: portfolio_returns}, 
+        "SPY Returns": {start_date: spy_returns},
+        "Return Diff": {start_date: return_diff},
+        "Index Beta": {start_date: portfolio_beta}
+    }
+
+    return cluster_index, cluster_performance
 
     
