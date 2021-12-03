@@ -183,7 +183,7 @@ def get_portfolio_beta(index_weights, date, df):
 
 ##################### MODELS #####################
 
-def clustering_model(rolling_correlations, date, K):
+def clustering_model(rolling_correlations, date, K, objective=GRB.MAXIMIZE):
     tups = {}
 
     for i in rolling_correlations.columns:
@@ -211,7 +211,7 @@ def clustering_model(rolling_correlations, date, K):
     portfolio_similarity = x.prod(correlations)
     m.setObjective(
         portfolio_similarity, 
-        GRB.MAXIMIZE
+        objective
     )
 
     cluster_numbers = m.addConstr(
@@ -354,80 +354,70 @@ def master_func(
     master_cluster_index,
     master_cluster_performance,
     master_mean_var_index,
-    master_mean_var_performance
+    master_mean_var_performance,
+    cluster_objective=GRB.MAXIMIZE
 ):
     start_date = get_closest_trading_day(date, ticker_data)
-    _, _, z = clustering_model(rolling_correlations, date, K)
+    try:
+        _, _, z = clustering_model(rolling_correlations, date, K, cluster_objective)
 
-    z_market_cap = market_caps.loc[
-        market_caps.index.get_level_values(1) == date
-    ].join(z)
-    z_market_cap.reset_index(drop=True, level=1, inplace=True)
+        z_market_cap = market_caps.loc[
+            market_caps.index.get_level_values(1) == date
+        ].join(z)
+        z_market_cap.reset_index(drop=True, level=1, inplace=True)
 
-    center_weights = z_market_cap[
-        (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
-    ].groupby("center").MarketCap.sum() /\
-        z_market_cap[
+        center_weights = z_market_cap[
             (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
-        ].MarketCap.sum()
+        ].groupby("center").MarketCap.sum() /\
+            z_market_cap[
+                (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
+            ].MarketCap.sum()
 
-    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
-        compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
+        portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+            compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
 
-    for x in center_weights.index:
-        master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
+        for x in center_weights.index:
+            master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
 
-    # master_cluster_index = {
-    #     *master_cluster_index, 
-    #     *{(start_date, x): center_weights.loc[x] for x in center_weights.index}
-    # } 
-
-    master_cluster_performance[start_date] = {
-        "Index Returns": portfolio_returns,
-        "SPY Returns": spy_returns,
-        "Return Diff": return_diff,
-        "Index Beta": portfolio_beta,
-    }
-    
-
-    mean_var_step, obj = mean_variance_model(
-        market_caps, 
-        ticker_data, 
-        date, 
-        rolling_covariances, 
-        center_weights,
-        min_beta, 
-        max_beta, 
-        min_expected_residual_return
-    )
-
-    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
-        compare_index_to_market(
-            mean_var_step.weights, 
-            start_date, 
+        master_cluster_performance[start_date] = {
+            "Index Returns": portfolio_returns,
+            "SPY Returns": spy_returns,
+            "Return Diff": return_diff,
+            "Index Beta": portfolio_beta,
+        }
+        
+        mean_var_step, obj = mean_variance_model(
+            market_caps, 
             ticker_data, 
-            ticker_data_wide
+            date, 
+            rolling_covariances, 
+            center_weights,
+            min_beta, 
+            max_beta, 
+            min_expected_residual_return
         )
 
-    # mean_var_index = {
-    #     (start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index
-    # }
+        portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+            compare_index_to_market(
+                mean_var_step.weights, 
+                start_date, 
+                ticker_data, 
+                ticker_data_wide
+            )
 
-    # master_mean_var_index = {
-    #     *master_mean_var_index,
-    #     *{(start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index}
-    # }
+        for x in mean_var_step[mean_var_step.weights > 0].index:
+            master_mean_var_index[(start_date, x)] = {'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights}
 
-    for x in mean_var_step[mean_var_step.weights > 0].index:
-        master_mean_var_index[(start_date, x)] = {'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights}
+        master_mean_var_performance[start_date] = {
+            "Index Returns": portfolio_returns,
+            "SPY Returns": spy_returns,
+            "Return Diff": return_diff,
+            "Index Beta": portfolio_beta,
+            "Active Risk": obj
+        }
 
-    master_mean_var_performance = {
-        "Index Returns": portfolio_returns,
-        "SPY Returns": spy_returns,
-        "Return Diff": return_diff,
-        "Index Beta": portfolio_beta,
-        "Active Risk": obj
-    }
+    except:
+        None
 
     return True
 
