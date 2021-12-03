@@ -330,6 +330,16 @@ def mean_variance_model(
 
     return x_results, opti_objective
 
+def compare_index_to_market(center_weights, date, ticker_data, ticker_data_wide):
+    portfolio_returns = get_portfolio_returns(
+        center_weights, date, ticker_data_wide
+    )
+    spy_returns = get_spy_returns(date)
+    
+    portfolio_beta = get_portfolio_beta(center_weights, date, ticker_data)
+
+    return portfolio_returns, spy_returns, portfolio_returns - spy_returns, portfolio_beta
+
 def master_func(
     date,
     K,
