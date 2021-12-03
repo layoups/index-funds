@@ -132,11 +132,11 @@ def get_ticker_data_multisource(tickers, start="2000-01-01", end="2021-11-12"):
     return universe
 
 def get_closest_trading_day(date, df):
-    formatted_date = datetime.strptime(date, "%Y-%m-%d")
+    formatted_date = datetime.strptime(date, "%Y-%m-%d") if type(date) == str else date
     all_dates = df.index.get_level_values("date")
     date_index = np.argmin(
         np.abs(
-            all_dates - datetime.strptime("2020-03-23", "%Y-%m-%d")
+            all_dates - formatted_date
         )
     )
 
@@ -353,7 +353,7 @@ def master_func(
     min_expected_residual_return
 ):
     start_date = get_closest_trading_day(date, ticker_data)
-    x, y, z = clustering_model(rolling_correlations, date, K)
+    _, _, z = clustering_model(rolling_correlations, date, K)
 
     z_market_cap = market_caps.loc[
         market_caps.index.get_level_values(1) == date
@@ -381,6 +381,37 @@ def master_func(
         "Index Beta": {start_date: portfolio_beta}
     }
 
-    return cluster_index, cluster_performance
+    mean_var_step, obj = mean_variance_model(
+        market_caps, 
+        ticker_data, 
+        date, 
+        rolling_covariances, 
+        center_weights,
+        min_beta, 
+        max_beta, 
+        min_expected_residual_return
+    )
+
+    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+        compare_index_to_market(
+            mean_var_step.weights, 
+            start_date, 
+            ticker_data, 
+            ticker_data_wide
+        )
+
+    mean_var_index = {
+        (start_date, x): mean_var_step[mean_var_step.weights > 0].loc[x] for x in mean_var_step[mean_var_step.weights > 0].index
+    }
+
+    mean_var_performance = {
+        "Index Returns": {start_date: portfolio_returns}, 
+        "SPY Returns": {start_date: spy_returns},
+        "Return Diff": {start_date: return_diff},
+        "Index Beta": {start_date: portfolio_beta}, 
+        "Active Risk": {start_date: obj}
+    }
+
+    return cluster_index, cluster_performance, mean_var_index, mean_var_performance
 
     
