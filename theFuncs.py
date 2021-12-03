@@ -342,4 +342,19 @@ def master_func(
     max_beta,
     min_expected_residual_return
 ):
-    None
+    start_date = get_closest_trading_day(date, ticker_data)
+    x, y, z = clustering_model(rolling_correlations, date, K)
+
+    z_market_cap = market_caps.loc[
+        market_caps.index.get_level_values(1) == date
+    ].join(z)
+    z_market_cap.reset_index(drop=True, level=1, inplace=True)
+
+    center_weights = z_market_cap[
+        (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
+    ].groupby("center").MarketCap.sum() /\
+        z_market_cap[
+            (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
+        ].MarketCap.sum()
+
+    
