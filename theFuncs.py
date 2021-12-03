@@ -329,3 +329,17 @@ def mean_variance_model(
     opti_objective = np.sqrt(objective.getValue())
 
     return x_results, opti_objective
+
+def master_func(
+    date,
+    K,
+    rolling_correlations,
+    market_caps, 
+    ticker_data, 
+    rolling_covariances, 
+    center_weights,
+    min_beta,
+    max_beta,
+    min_expected_residual_return
+):
+    None
