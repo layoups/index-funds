@@ -335,7 +335,7 @@ def mean_variance_model(
 
     opti_objective = np.sqrt(objective.getValue())
 
-    return x_results, opti_objective
+    return x_results.reset_index(level=1, drop=True), opti_objective
 
 def compare_index_to_market(center_weights, date, ticker_data, ticker_data_wide):
     portfolio_returns = get_portfolio_returns(
