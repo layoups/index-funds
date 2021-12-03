@@ -406,7 +406,9 @@ def master_func(
             )
 
         for x in mean_var_step[mean_var_step.weights > 0].index:
-            master_mean_var_index[(start_date, x)] = {'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights}
+            master_mean_var_index[(start_date, x)] = {
+                'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
+            }
 
         master_mean_var_performance[start_date] = {
             "Index Returns": portfolio_returns,
