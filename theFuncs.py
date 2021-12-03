@@ -42,7 +42,7 @@ def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
             index_col=0
         )
     if df.index[0] > datetime.strptime(start, "%Y-%m-%d") or df.index[-1] < datetime.strptime(end, "%Y-%m-%d"):
-        return error
+        return error()
 
     df['ticker'] = tickers[0]
     if len(tickers) > 1:
@@ -362,34 +362,33 @@ def master_func(
     cluster_objective=GRB.MAXIMIZE
 ):
     start_date = get_closest_trading_day(date, ticker_data)
-    try:
-        _, _, z = clustering_model(rolling_correlations, date, K, cluster_objective)
+    _, _, z = clustering_model(rolling_correlations, start_date, K, cluster_objective)
 
-        z_market_cap = market_caps.loc[
-            market_caps.index.get_level_values(1) == date
-        ].join(z)
-        z_market_cap.reset_index(drop=True, level=1, inplace=True)
+    z_market_cap = market_caps.loc[
+        market_caps.index.get_level_values(1) == start_date
+    ].join(z)
+    z_market_cap.reset_index(drop=True, level=1, inplace=True)
 
-        center_weights = z_market_cap[
+    center_weights = z_market_cap[
+        (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
+    ].groupby("center").MarketCap.sum() /\
+        z_market_cap[
             (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
-        ].groupby("center").MarketCap.sum() /\
-            z_market_cap[
-                (z_market_cap.in_center == 1) & (z_market_cap.is_center == 1)
-            ].MarketCap.sum()
+        ].MarketCap.sum()
 
-        portfolio_returns, spy_returns, return_diff, portfolio_beta = \
-            compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
+    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+        compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
 
-        for x in center_weights.index:
-            master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
+    for x in center_weights.index:
+        master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
 
-        master_cluster_performance[start_date] = {
-            "Index Returns": portfolio_returns,
-            "SPY Returns": spy_returns,
-            "Return Diff": return_diff,
-            "Index Beta": portfolio_beta,
-        }
-        
+    master_cluster_performance[start_date] = {
+        "Index Returns": portfolio_returns,
+        "SPY Returns": spy_returns,
+        "Return Diff": return_diff,
+        "Index Beta": portfolio_beta,
+    }
+    try:
         mean_var_step, obj = mean_variance_model(
             market_caps, 
             ticker_data, 
@@ -423,7 +422,7 @@ def master_func(
         }
 
     except:
-        None
+        print("mean var error")
 
     return True
 
