@@ -396,41 +396,40 @@ def master_func(
         "Return Diff": return_diff,
         "Index Beta": portfolio_beta,
     }
-    try:
-        mean_var_step, obj = mean_variance_model(
-            market_caps, 
-            ticker_data, 
+
+    mean_var_step, obj = mean_variance_model(
+        market_caps, 
+        ticker_data, 
+        start_date, 
+        rolling_covariances, 
+        center_weights,
+        min_beta, 
+        max_beta, 
+        min_expected_residual_return
+    )
+
+    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+        compare_index_to_market(
+            mean_var_step.weights, 
             start_date, 
-            rolling_covariances, 
-            center_weights,
-            min_beta, 
-            max_beta, 
-            min_expected_residual_return
+            ticker_data, 
+            ticker_data_wide
         )
 
-        portfolio_returns, spy_returns, return_diff, portfolio_beta = \
-            compare_index_to_market(
-                mean_var_step.weights, 
-                start_date, 
-                ticker_data, 
-                ticker_data_wide
-            )
-
-        for x in mean_var_step[mean_var_step.weights > 0].index:
-            master_mean_var_index[(start_date, x)] = {
-                'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
-            }
-
-        master_mean_var_performance[start_date] = {
-            "Index Returns": portfolio_returns,
-            "SPY Returns": spy_returns,
-            "Return Diff": return_diff,
-            "Index Beta": portfolio_beta,
-            "Active Risk": obj
+    for x in mean_var_step[mean_var_step.weights > 0].index:
+        master_mean_var_index[(start_date, x)] = {
+            'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
         }
 
-    except:
-        print("mean var error")
+    master_mean_var_performance[start_date] = {
+        "Index Returns": portfolio_returns,
+        "SPY Returns": spy_returns,
+        "Return Diff": return_diff,
+        "Index Beta": portfolio_beta,
+        "Active Risk": obj
+    }
+
+
 
     return True
 
