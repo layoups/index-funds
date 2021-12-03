@@ -266,7 +266,7 @@ def mean_variance_model(
 
     theData = {
         i: [df.loc[(i, date), :].values[0][-2], df.loc[(i, date), :].values[0][-1]]\
-            for i in df.index.get_level_values(0).unique()
+            for i in df.loc[df.index.get_level_values(1) == date].index
     }
 
     tickers, alphas, betas = gp.multidict(theData)
