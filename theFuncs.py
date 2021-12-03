@@ -41,7 +41,7 @@ def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
             parse_dates=True, 
             index_col=0
         )
-    if df.index[0] < datetime.strptime(start, "%Y-%m-%d") or df.index[-1] > datetime.strptime(end, "%Y-%m-%d"):
+    if df.index[0] > datetime.strptime(start, "%Y-%m-%d") or df.index[-1] < datetime.strptime(end, "%Y-%m-%d"):
         return error
 
     df['ticker'] = tickers[0]
