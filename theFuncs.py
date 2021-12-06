@@ -393,9 +393,9 @@ def master_func(
         compare_index_to_market(center_weights, start_date, ticker_data, ticker_data_wide)
 
     for x in center_weights.index:
-        master_cluster_index[(start_date, x)] = {'weight': center_weights.loc[x]}
+        master_cluster_index[(K, start_date, x)] = {'weight': center_weights.loc[x]}
 
-    master_cluster_performance[start_date] = {
+    master_cluster_performance[(K, start_date)] = {
         "Index Returns": portfolio_returns,
         "SPY Returns": spy_returns,
         "Return Diff": return_diff,
@@ -424,11 +424,11 @@ def master_func(
             )
 
         for x in mean_var_step[mean_var_step.weights > 0].index:
-            master_mean_var_index[(start_date, x)] = {
+            master_mean_var_index[(K, start_date, x)] = {
                 'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
             }
 
-        master_mean_var_performance[start_date] = {
+        master_mean_var_performance[(K, start_date)] = {
             "Index Returns": portfolio_returns,
             "SPY Returns": spy_returns,
             "Return Diff": return_diff,
