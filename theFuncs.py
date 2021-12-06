@@ -341,7 +341,7 @@ def mean_variance_model(
     x_results = x_results.reset_index(level=1, drop=True).sort_values(
         by='weights', 
         ascending=False
-    ).iloc[:10]
+    ).iloc[:len(center_weights.index.unique())]
 
     opti_objective = np.sqrt(objective.getValue())
 
