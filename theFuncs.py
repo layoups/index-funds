@@ -42,7 +42,7 @@ def get_ticker_data(tickers, start="2000-01-01", end="2021-11-12"):
             index_col=0
         )
     if df.index[0] > datetime.strptime(start, "%Y-%m-%d") or df.index[-1] < datetime.strptime(end, "%Y-%m-%d"):
-        return error(msg="ERROR")
+        raise Exception()
 
     df['ticker'] = tickers[0]
     if len(tickers) > 1:
@@ -402,40 +402,57 @@ def master_func(
         "Index Beta": portfolio_beta,
     }
 
-    mean_var_step, obj = mean_variance_model(
-        market_caps, 
-        ticker_data, 
-        start_date, 
-        rolling_covariances, 
-        center_weights,
-        min_beta, 
-        max_beta, 
-        min_expected_residual_return
-    )
+    try:
 
-    portfolio_returns, spy_returns, return_diff, portfolio_beta = \
-        compare_index_to_market(
-            mean_var_step.weights, 
-            start_date, 
+        mean_var_step, obj = mean_variance_model(
+            market_caps, 
             ticker_data, 
-            ticker_data_wide
+            start_date, 
+            rolling_covariances, 
+            center_weights,
+            min_beta, 
+            max_beta, 
+            min_expected_residual_return
         )
 
-    for x in mean_var_step[mean_var_step.weights > 0].index:
-        master_mean_var_index[(start_date, x)] = {
-            'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
+        portfolio_returns, spy_returns, return_diff, portfolio_beta = \
+            compare_index_to_market(
+                mean_var_step.weights, 
+                start_date, 
+                ticker_data, 
+                ticker_data_wide
+            )
+
+        for x in mean_var_step[mean_var_step.weights > 0].index:
+            master_mean_var_index[(start_date, x)] = {
+                'weight': mean_var_step[mean_var_step.weights > 0].loc[x].weights
+            }
+
+        master_mean_var_performance[start_date] = {
+            "Index Returns": portfolio_returns,
+            "SPY Returns": spy_returns,
+            "Return Diff": return_diff,
+            "Index Beta": portfolio_beta,
+            "Active Risk": obj
         }
-
-    master_mean_var_performance[start_date] = {
-        "Index Returns": portfolio_returns,
-        "SPY Returns": spy_returns,
-        "Return Diff": return_diff,
-        "Index Beta": portfolio_beta,
-        "Active Risk": obj
-    }
-
-
+    
+    except:
+        None
 
     return True
+
+
+# if __name__ == '__main__':
+
+#     sp100 = os.listdir(os.getcwd()+'/data/stock_dfs')
+#     sp100_tickers = []
+#     for csvfile in sp100:
+#         sp100_tickers.append(csvfile[:-4])
+
+#     ticker_data = get_ticker_data_multisource(
+#         sp100_tickers, 
+#         start="2015-01-02", 
+#         end="2021-11-01"
+#     )
 
     
